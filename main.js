@@ -75,12 +75,12 @@ function officialPageActivity(searchText = "") {
               placeholder:"some key words to search",
               darkKeyboard: true
             },
-            layout: function (make, view) {
+            layout:  (make, view)=> {
               make.right.top.left.inset(15)
               make.height.equalTo(30)
             },
             events: {
-              returned: async function (sender) {
+              returned: async  (sender)=> {
                 $("webpage").url = "https://www.lottiefiles.com/search?q=" + sender.text
                  $("searchbarView").updateLayout((make) => {
                     make.top.inset(-45)
@@ -91,7 +91,7 @@ function officialPageActivity(searchText = "") {
                     damping: .5,
                     velocity: 0,
                     options: 0,
-                    animation: function () {
+                    animation:  () =>{
                       $("hideSearch").title = "expand to search↓"
                       $("searchbarView").relayout();
                     }
@@ -126,7 +126,7 @@ function officialPageActivity(searchText = "") {
                     damping: .5,
                     velocity: 0,
                     options: 0,
-                    animation: function () {
+                    animation:  ()=> {
                       sender.title = "expand to search↓"
                       $("searchbarView").relayout();
                     }
@@ -144,7 +144,7 @@ function officialPageActivity(searchText = "") {
                     damping: .5,
                     velocity: 0,
                     options: 0,
-                    animation: function () {
+                    animation:  () =>{
                       sender.title = "fold↑";
                       $("searchbarView").relayout();
                     }
@@ -186,7 +186,7 @@ function officialPageActivity(searchText = "") {
             $ui.toast("开始下载");
             var resp = await $http.download({
               url: object.url,
-              progress: function (bytesWritten, totalBytes) {
+              progress:  (bytesWritten, totalBytes)=> {
                 var percentage = bytesWritten * 1.0 / totalBytes
                 $ui.progress(percentage, "下载中...")
               },
@@ -209,7 +209,7 @@ function officialPageActivity(searchText = "") {
                 $archiver.unzip({
                    file: file,
                    dest: unZipPath,
-                   handler: function(success) {
+                   handler: (success) =>{
  $ui.toast("解压完毕")
   }
                 })
@@ -221,9 +221,9 @@ function officialPageActivity(searchText = "") {
       },
     ],
     events: {
-      disappeared: function () {
+      disappeared:  ()=> {
       },
-      dealloc: function () {}
+      dealloc:  () =>{}
     }
   });
 }
@@ -252,7 +252,7 @@ function getJsonIn(parentFolder, jsonList) {
                  $archiver.unzip({
                    file: $file.read(pointer),
                    dest: unZipPath,
-                   handler: function(success) {
+                   handler: (success)=> {
                     $ui.toast("解压完毕,重新打开以查看新增内容") 
                    }
                  })
@@ -311,9 +311,9 @@ function localAnimateAcitivity() {
                   make.height.equalTo(185)
                 },
                 events: {
-                  getDuration: function (frame) {
+                  getDuration:  (frame)=> {
                   },
-                  clickedEvent: function (str) {
+                  clickedEvent:  (str)=> {
                   }
                 }
               },
@@ -337,7 +337,7 @@ function localAnimateAcitivity() {
       },
       layout: $layout.fill,
       events:{
-        didSelect: function(sender, indexPath, data) {
+        didSelect: (sender, indexPath, data)=> {
           console.log()
           $("web").html=html($file.read(data["animationName"]["path"]).string)
           $ui.pop();
@@ -349,10 +349,10 @@ function localAnimateAcitivity() {
       appeared:()=>{
         insertData()
       },
-      disappeared: function () {
+      disappeared: ()=> {
         
       },
-      dealloc: function () {}
+      dealloc: ()=> {}
     }
   });
 }
@@ -392,7 +392,7 @@ $ui.render({
           longPressed: (sender) => {
             $('web').eval({
               script: `animItem.stop()`,
-              handler: function (result, error) {}
+              handler:  (result, error)=> {}
             })
             officialPageActivity()
           }
@@ -406,13 +406,13 @@ $ui.render({
         darkKeyboard: true,
         placeholder:"Url or KeyWords"
       },
-      layout: function (make, view) {
+      layout:  (make, view) =>{
         make.left.inset(60)
         make.top.right.inset(15)
         make.height.equalTo(30)
       },
       events: {
-        returned: async function (sender) {
+        returned: async  (sender)=> {
           let webReg = /^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*([\?&]\w+=\w*)*$/
           $delay(0.5, $("inputUrl").blur())
           if (!!sender.text.match(webReg)) {
@@ -443,13 +443,13 @@ $ui.render({
         make.bottom.inset(160)
       },
       events: {
-        getDuration: function (frame) {
+        getDuration:  (frame)=> {
           duration = frame
           $('slider').max = duration
           // $('slider').value=
         },
-        clickedEvent: function (str) {},
-        didClose: function (sender) {},
+        clickedEvent:  (str)=> {},
+        didClose:  (sender)=> {},
       }
     },
     {
@@ -460,18 +460,18 @@ $ui.render({
         value: 1,
         step: 0.25
       },
-      layout: function (make, view) {
+      layout:  (make, view)=> {
         // make.right.inset(15)
         make.centerX.inset(0)
         make.height.equalTo(12)
         make.bottom.inset(145)
       },
       events: {
-        changed: function (sender) {
+        changed:  (sender)=> {
           $ui.toast(sender.value + 'x')
           $('web').eval({
             script: `animItem.setSpeed(${sender.value})`,
-            handler: function (result, error) {}
+            handler:  (result, error)=> {}
           })
         }
       }
@@ -483,16 +483,16 @@ $ui.render({
         max: 1.0,
         min: 0
       },
-      layout: function (make, view) {
+      layout:  (make, view) =>{
         make.bottom.inset(90)
         make.left.right.inset(15)
       },
       events: {
-        changed: function (sender) {
+        changed:  (sender) =>{
           $ui.toast(~~sender.value + ' frame')
           $('web').eval({
             script: `animItem.goToAndStop(${~~sender.value}, true)`,
-            handler: function (result, error) {}
+            handler:  (result, error) =>{}
           })
         }
       }
@@ -525,7 +525,7 @@ $ui.render({
             tapped: (sender) => {
               $('web').eval({
                 script: `animItem.stop()`,
-                handler: function (result, error) {}
+                handler:  (result, error) =>{}
               })
               localAnimateAcitivity()
             }
@@ -548,7 +548,7 @@ $ui.render({
               $('web').eval({
                 script: `animItem.${sender.id.toLocaleLowerCase()}()`,
 
-                handler: function (result, error) {}
+                handler:  (result, error) =>{}
               })
               $ui.toast(sender.id);
             }
@@ -569,7 +569,7 @@ $ui.render({
             tapped: (sender) => {
               $('web').eval({
                 script: `animItem.${sender.id.toLocaleLowerCase()}()`,
-                handler: function (result, error) {}
+                handler:  (result, error) =>{}
               })
               $ui.toast(sender.id);
             }
@@ -592,7 +592,7 @@ $ui.render({
             tapped: (sender) => {
               $('web').eval({
                 script: `animItem.${sender.id.toLocaleLowerCase()}()`,
-                handler: function (result, error) {}
+                handler:  (result, error)=> {}
               })
               $ui.toast(sender.id);
             }
@@ -618,38 +618,14 @@ $ui.render({
           }
         }
       ]
-      // type: 'list',
-      // props: {
-      //   scrollEnabled: !1,
-      //   rowHeight: 34,
-      //   data: ['PLAY', 'PAUSE', 'STOP', 'Export To HTML']
-      // },
-      // layout: (make, view) => {
-      //   make.height.equalTo(135)
-      //   make.left.bottom.right.inset(0)
-      // },
-      // events: {
-      //   didSelect: (sender, indexPath, data) => {
-      //     $ui.toast(data)
-      //     if (data === 'Export To HTML') return $share.sheet(html(json))
-      //     $('web').eval({
-      //       script: `animItem.${data.toLocaleLowerCase()}()`,
-      //       handler: function (result, error) {}
-      //     })
-      //   }
-      // }
     }
   ],
   events: {
-    appeared: function () {
-      // console.log("render appeared:check web")
-      // console.log($("web"))
+    appeared:  () =>{
     },
-    disappeared: function () {
-      // console.log("render disappeared")
+    disappeared:  ()=> {
     },
-    dealloc: function () {
-      // console.log("render delloc")
+    dealloc:  ()=> {
     }
   }
 })
