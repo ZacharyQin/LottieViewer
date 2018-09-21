@@ -95,7 +95,7 @@ function officialPageActivity(searchText = "") {
             },
             events: {
               returned: async  (sender)=> {
-                $("webpage").url = "https://www.lottiefiles.com/search?q=" + sender.text
+                $("webpage").url = "https://www.lottiefiles.com/search?q=" + encodeURI(sender.text)
                  $("searchbarView").updateLayout((make) => {
                     make.top.inset(-45)
                   })
@@ -176,7 +176,7 @@ function officialPageActivity(searchText = "") {
         type: "web",
         props: {
           id: "webpage",
-          url: searchText == "" ? "https://www.lottiefiles.com/popular" : `https://www.lottiefiles.com/search?q=${searchText}`,
+          url: searchText == "" ? "https://www.lottiefiles.com/popular" : `https://www.lottiefiles.com/search?q=${encodeURI(searchText)}`,
           script: `var a=document.getElementsByClassName("button is-light");
             for (i in a ){
               if(a[i].className!="show_qr button is-light"){
@@ -488,8 +488,8 @@ $ui.render({
         },
         touchesMoved: (sender, location) =>{
           let loctaion0=$cache.get("initLocation");
-          deltaX=location["x"]-loctaion0["x"]
-          deltaY=loctaion0["y"]-location["y"]
+          let deltaX=location["x"]-loctaion0["x"]
+          let deltaY=loctaion0["y"]-location["y"]
           let cosa=Math.abs(deltaX/Math.sqrt(deltaX*deltaX+deltaY*deltaY))
           let cosb=Math.abs(deltaY/Math.sqrt(deltaX*deltaX+deltaY*deltaY))
           if($cache.get("horizontalEnabled")&&cosa>Math.cos((Math.PI)/6)){
