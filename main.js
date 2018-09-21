@@ -1,5 +1,9 @@
 let json = $file.read('/assets/jsbox_update.json').string
 let duration = 0
+let currentFrame=0
+let fixedFrame=0
+let currentRate=1
+let fixedRate=1
 let normalSize = $size(375, 375)
 let btnSize=$size(45,45)
 let html = (json, size = normalSize) => `<!DOCTYPE html>
@@ -51,7 +55,17 @@ let html = (json, size = normalSize) => `<!DOCTYPE html>
 </body>
 
 </html>`
-
+function resetPlaySpeed(){
+  currentRate=1
+  currentFrame=0
+  $device.taptic(1);
+  $("slider").value=0
+  $ui.toast("1x");
+  $('web').eval({
+    script: `animItem.setSpeed(1)\nanimItem.play()`,
+    handler:  (result, error)=> {}
+  })
+}
 function officialPageActivity(searchText = "") {
   $ui.push({
     props: {
@@ -131,7 +145,7 @@ function officialPageActivity(searchText = "") {
                       $("searchbarView").relayout();
                     }
                   })
- $delay(0.5,$("search").blur())
+                   $delay(0.5,$("search").blur())
                 } else {
                   $("searchbarView").updateLayout((make) => {
                     make.top.inset(0)
@@ -210,11 +224,10 @@ function officialPageActivity(searchText = "") {
                    file: file,
                    dest: unZipPath,
                    handler: (success) =>{
- $ui.toast("解压完毕")
-  }
+                      $ui.toast("解压完毕")
+                     }
                 })
               }
-              
             }
           },
         }
@@ -340,6 +353,7 @@ function localAnimateAcitivity() {
         didSelect: (sender, indexPath, data)=> {
           console.log()
           $("web").html=html($file.read(data["animationName"]["path"]).string)
+          resetPlaySpeed()
           $ui.pop();
         }
       }
@@ -350,7 +364,6 @@ function localAnimateAcitivity() {
         insertData()
       },
       disappeared: ()=> {
-        
       },
       dealloc: ()=> {}
     }
@@ -387,6 +400,7 @@ $ui.render({
               } = await $http.get(result)
               json = JSON.stringify(data)
               $('web').html = html(json)
+              resetPlaySpeed()
             }
           },
           longPressed: (sender) => {
@@ -422,7 +436,7 @@ $ui.render({
             } = await $http.get(sender.text)
             json = JSON.stringify(data)
             $('web').html = html(json)
-           
+            resetPlaySpeed()
           } else {
             officialPageActivity(sender.text)
           }
@@ -430,26 +444,114 @@ $ui.render({
       }
     },
     {
-      type: 'web',
-      props: {
-        id: 'web',
-        scrollEnabled: !1,
-        showsProgress: !1,
-        html: html(json)
+      type:"view",
+      props:{
+        id:"webContainer"
       },
-      layout: (make, view) => {
+      layout:(make,view)=>{
         make.top.equalTo($('inputUrl').bottom).inset(5)
-        make.left.right.inset(0)
+        make.left.right.inset(4)
         make.bottom.inset(160)
       },
-      events: {
-        getDuration:  (frame)=> {
-          duration = frame
-          $('slider').max = duration
-          // $('slider').value=
+      views:[
+        {
+          type: 'web',
+          props: {
+            id: 'web',
+            scrollEnabled: !1,
+            showsProgress: !1,
+            userInteractionEnabled:false,
+            html: html(json)
+          },
+          layout: (make, view) => {
+            make.edges.inset(0)
+          },
+          events: {
+            getDuration:  (frame)=> {
+              duration = frame-1
+              $('slider').max = duration
+              // $('slider').value=
+            },
+            clickedEvent:  (str)=> {},
+            didClose:  (sender)=> {},
+          }
         },
-        clickedEvent:  (str)=> {},
-        didClose:  (sender)=> {},
+      ],
+      events:{
+        touchesBegan: (sender, location) =>{
+          $cache.set("initLocation", location);
+          $cache.set("horizontalEnabled", true);
+          $cache.set("verticalEnabled", true);
+          $cache.set("checked", false);
+          $cache.set("horizontalFixed", false);
+
+        },
+        touchesMoved: (sender, location) =>{
+          let loctaion0=$cache.get("initLocation");
+          deltaX=location["x"]-loctaion0["x"]
+          deltaY=loctaion0["y"]-location["y"]
+          let cosa=Math.abs(deltaX/Math.sqrt(deltaX*deltaX+deltaY*deltaY))
+          let cosb=Math.abs(deltaY/Math.sqrt(deltaX*deltaX+deltaY*deltaY))
+          if($cache.get("horizontalEnabled")&&cosa>Math.cos((Math.PI)/6)){
+            if(!$cache.get("checked")){
+              $cache.set("checked", true);
+              $cache.set("verticalEnabled", false);
+            }
+            $cache.set("horizontalFixed", true);
+          }else if($cache.get("verticalEnabled")&&cosb>Math.cos((Math.PI)/6)){
+            if(!$cache.get("checked")){
+              $cache.set("checked", true);
+              $cache.set("horizontalEnabled", false);
+            }
+          }
+          if ($cache.get("horizontalEnabled")&&$cache.get("checked")){
+            let totalWidth=$('web').frame.width
+            let rate=deltaX/totalWidth*1.25
+            let frame=(currentFrame+rate*duration)<0?0:(currentFrame+rate*duration)
+            frame=frame<=duration?frame:duration
+            fixedFrame=frame
+            $("slider").value=frame
+            $ui.toast(frame.toFixed(0) + ' frame')
+            $('web').eval({
+              script: `animItem.goToAndStop(${frame.toFixed(0)}, true)`,
+              handler:  (result, error) =>{}
+            })
+          }
+          if($cache.get("verticalEnabled")&&$cache.get("checked")){
+            let rate=(currentRate+deltaY*2/$('web').frame.height)<0?0:(currentRate+deltaY*2/normalSize.height)
+            fixedRate=rate
+            $ui.toast(rate.toFixed(2) + 'x')
+            $('web').eval({
+            script: `animItem.setSpeed(${rate})`,
+            handler:  (result, error)=> {}
+          })
+          }
+        },
+        touchesEnded: (sender, location) =>{
+          $cache.set("horizontalEnabled", true);
+          $cache.set("verticalEnabled", true);
+          $cache.set("checked", false);
+          currentFrame=fixedFrame
+          currentRate=fixedRate
+          if(!$cache.get("horizontalFixed")){
+          $('web').eval({
+            script: `animItem.play()`,
+            handler:  (result, error) =>{}
+          })
+          $cache.set("horizontalFixed", false);
+        }
+        },
+        doubleTapped: (sender)=> {
+          currentRate=1
+          currentFrame=0
+          $device.taptic(1);
+          $("slider").value=0
+          $ui.toast("1x");
+          $('web').eval({
+            script: `animItem.setSpeed(1)\nanimItem.play()`,
+            handler:  (result, error)=> {}
+          })
+        }
       }
     },
     {
@@ -479,7 +581,7 @@ $ui.render({
     {
       type: 'slider',
       props: {
-        value: 1.0,
+        value: 0,
         max: 1.0,
         min: 0
       },
@@ -500,6 +602,7 @@ $ui.render({
     {
       type: "view",
       props: {
+        id:"buttonContainer",
         borderColor: $color("black"),
         borderWidth: 2,
         smoothRadius: 20
