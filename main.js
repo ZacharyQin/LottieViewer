@@ -1,11 +1,12 @@
+let duration = 0    //每个动画文件的总帧数
+let currentFrame=0  //手势操作-当前所在的帧数
+let fixedFrame=0    //手势操作-当前移动后所在的帧数
+let currentRate=1   //手势操作-当前播放速率
+let fixedRate=1     //手势操作-当前移动后的速率
+let normalSize = $size(375, 375)  //动画大小
+let btnSize=$size(45,45)          //下方按键大小
 let json = $file.read('/assets/jsbox_update.json').string
-let duration = 0
-let currentFrame=0
-let fixedFrame=0
-let currentRate=1
-let fixedRate=1
-let normalSize = $size(375, 375)
-let btnSize=$size(45,45)
+let lottieJs= $file.read('/scripts/lottie.min.js').string
 let html = (json, size = normalSize) => `<!DOCTYPE html>
 <html lang="en">
 
@@ -39,7 +40,7 @@ let html = (json, size = normalSize) => `<!DOCTYPE html>
 
 <body>
     <div id="svgContainer"></div>
-    <script src="https://www.lottiefiles.com/js/lottie.min.js"></script>
+    <script type="text/javascript">${lottieJs}</script>
     <script>
         var animationData = ${json}
         var svgContainer = document.getElementById("svgContainer")
@@ -55,6 +56,7 @@ let html = (json, size = normalSize) => `<!DOCTYPE html>
 </body>
 
 </html>`
+//重置播放状态
 function resetPlaySpeed(){
   currentRate=1
   currentFrame=0
@@ -66,6 +68,8 @@ function resetPlaySpeed(){
     handler:  (result, error)=> {}
   })
 }
+
+//官方lottie页面跳转
 function officialPageActivity(searchText = "") {
   $ui.push({
     props: {
@@ -240,6 +244,8 @@ function officialPageActivity(searchText = "") {
     }
   });
 }
+
+//获取本地动画文件
 function getJsonIn(parentFolder, jsonList) {
   let list = $file.list(parentFolder);
   for (var i in list) {
@@ -275,14 +281,13 @@ function getJsonIn(parentFolder, jsonList) {
     }
   }
 }
-// var listData=[]
-// getJsonIn(".", listData)
-
 function insertData() {
   let jsonList = []
   getJsonIn(".", jsonList)
   $("selectView").data=jsonList
 }
+
+//本地动画gallery
 function localAnimateAcitivity() {
   $ui.push({
     props: {
