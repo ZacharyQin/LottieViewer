@@ -50,7 +50,7 @@ let openBtn={
         handler:  (result, error) =>{}
       })
       localAnimateAcitivity()
-    }
+    },
   }
 }
 let colorBtn={
@@ -159,10 +159,17 @@ let playBtn={
       $('slider').value=0
       $('web').eval({
         script: `animItem.${sender.id.toLocaleLowerCase()}()`,
-
         handler:  (result, error) =>{}
       })
       $ui.toast(sender.id);
+    },
+    longPressed:(sender)=>{
+      $device.taptic(1);
+      $('web').eval({
+        script: `animItem.stop()`,
+        handler:  (result, error) =>{}
+      })
+      $ui.toast("STOP");
     }
   }
 }
@@ -187,8 +194,17 @@ let pauseBtn={
         handler:  (result, error) =>{}
       })
       $ui.toast(sender.id);
+    },
+    longPressed:(sender)=>{
+      $device.taptic(1);
+      sender.sender.remove()
+      $('buttonContainer').add(playBtn)
+      $('web').eval({
+        script: `animItem.stop()`,
+        handler:  (result, error) =>{}
+      })
+      $ui.toast("STOP");
     }
-
   }
 }
 let stopBtn={
@@ -289,13 +305,49 @@ let html = (json, size = normalSize) => `<!DOCTYPE html>
 </body>
 
 </html>`
+
+//下载文件到指定路径
+async function downloadFile(url,path,fileName=""){
+  var resp = await $http.download({
+    url: url,
+    progress:  (bytesWritten, totalBytes)=> {
+      var percentage = bytesWritten * 1.0 / totalBytes
+      $ui.progress(percentage, "下载中...")
+    },
+  })
+  var file = resp.data
+  if(fileName==""){
+    fileName=file.fileName
+  }
+  if (!$file.exists(path)) $file.mkdir(path);
+  if ($file.exists(path + fileName)) {
+    $ui.toast("同目录已存在同名文件")
+  } else {
+    $file.write({
+      data: file,
+      path: path + fileName
+    });
+    $ui.toast("下载完成 :" + fileName);
+    if(/.zip$/.test(fileName)){
+      $ui.toast("检测为压缩包格式，解压中");
+      let unZipPath=path+fileName.split(".")[0]
+      !$file.exists(unZipPath)?$file.mkdir(unZipPath):false;
+      $archiver.unzip({
+         file: file,
+         dest: unZipPath,
+         handler: (success) =>{
+            $ui.toast("解压完毕")
+           }
+      })
+    }
+  }
+}
 //重置播放状态
 function resetPlaySpeed(){
   currentRate=1
   currentFrame=0
   $device.taptic(1);
   $("slider").value=0
-  $ui.toast("1x");
   $('web').eval({
     script: `animItem.setSpeed(1)\nanimItem.play()`,
     handler:  (result, error)=> {}
@@ -430,41 +482,13 @@ function officialPageActivity(searchText = "") {
         },
         events: {
           didStart: (sender, navigation) => {
-          },didFinish: (sender, navigation) =>{
+          },
+          didFinish: (sender, navigation) =>{
             $("webpage").eval(`lottie.setQuality("low")`)
-},
+          },
           downloadEvent: async (object) => {
             $ui.toast("开始下载");
-            var resp = await $http.download({
-              url: object.url,
-              progress:  (bytesWritten, totalBytes)=> {
-                var percentage = bytesWritten * 1.0 / totalBytes
-                $ui.progress(percentage, "下载中...")
-              },
-            });
-            var file = resp.data
-            if (!$file.exists("./assets/download/")) $file.mkdir("./assets/download");
-            if ($file.exists("./assets/download/" + file.fileName)) {
-              $ui.toast("同目录已存在同名文件")
-            } else {
-              $file.write({
-                data: file,
-                path: "./assets/download/" + file.fileName
-              });
-              $ui.toast("下载完成 :" + file.fileName);
-              if(/.zip$/.test(file.fileName)){
-                $ui.toast("检测为压缩包格式，解压中");
-                let unZipPath="./assets/download/"+file.fileName.split(".")[0]
-                !$file.exists(unZipPath)?$file.mkdir(unZipPath):false;
-                $archiver.unzip({
-                   file: file,
-                   dest: unZipPath,
-                   handler: (success) =>{
-                      $ui.toast("解压完毕")
-                     }
-                })
-              }
-            }
+            await downloadFile(object.url,"./assets/download/")
           },
         }
       },
@@ -590,6 +614,7 @@ function localAnimateAcitivity() {
         didSelect: (sender, indexPath, data)=> {
           $("web").html=html($file.read(data["animationName"]["path"]).string)
           resetPlaySpeed()
+          $ui.toast("1x");
           $ui.pop();
         }
       }
@@ -605,10 +630,6 @@ function localAnimateAcitivity() {
     }
   });
 }
-
-
-
-
 $app.autoKeyboardEnabled = true
 $ui.render({
   props: {
@@ -626,17 +647,25 @@ $ui.render({
       },
       events: {
         tapped: async (sender) => {
-            var result = await $qrcode.scan()
-            if ((typeof result) == "undefined") {
-              $ui.toast("canceled")
-            } else {
-              $('web').html = html($file.read('/assets/loading.json').string)
-              let {
-                data
-              } = await $http.get(result)
-              json = JSON.stringify(data)
-              $('web').html = html(json)
-              resetPlaySpeed()
+            $device.taptic(0);
+            let result = await $qrcode.scan()
+            console.log(result)
+            let webReg = /^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+(:\d+)*(\/\w+\.\w+)*([\?&]\w+=\w*)*$/
+            let lottieReg=/^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?lottiefiles\.com\/download\/[0-9]*$/
+            let lottieQrReg=/^(?=^.{3,255}$)(http(s)?:\/\/)?(www\.)?lottiefiles\.com\/storage\/datafiles\/[-a-zA-Z0-9]*\/[-a-zA-Z0-9]*.json$/
+            if (!!result.match(lottieQrReg)) {
+              await downloadFile(result,"./assets/download/qr/",/datafiles\/[-a-zA-Z0-9]*/.exec(result)[0].split("/").pop().substring(0,5)+".json")
+              if (result == undefined) {
+                $ui.toast("canceled")
+              } else {
+                $('web').html = html($file.read('/assets/loading.json').string)
+                let {
+                  data
+                } = await $http.get(result)
+                json = JSON.stringify(data)
+                $('web').html = html(json)
+                resetPlaySpeed()
+              }
             }
           },
           longPressed: (sender) => {
@@ -677,6 +706,7 @@ $ui.render({
             json = JSON.stringify(data)
             $('web').html = html(json)
             resetPlaySpeed()
+            $ui.toast("1x");
           } else {
             officialPageActivity(sender.text)
           }
