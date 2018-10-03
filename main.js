@@ -5,7 +5,240 @@ let currentRate=1   //手势操作-当前播放速率
 let fixedRate=1     //手势操作-当前移动后的速率
 let normalSize = $size(375, 375)  //动画大小
 let btnSize=$size(45,45)          //下方按键大小
-let json = $file.read('/assets/jsbox_update.json').string
+let colorContainer={
+  type:"view",
+  props:{
+    id:"colorContainer",
+    bgcolor:$color("#EEF1F1"),
+    radius:20,
+    borderColor:$color("black"),
+    borderWidth:1,
+    alpha:0
+  },
+  layout:(make,view)=>{
+    make.centerX.equalTo($("buttonContainer").centerX)
+    make.bottom.equalTo($('buttonContainer').top)
+    make.height.width.equalTo(0)
+  },
+  events:{
+    tapped:(sender)=>{
+      
+    }
+  }
+}
+let openBtn={
+  type: "button",
+  props: {
+    id: "OPEN",
+    image: $file.read("./assets/picture.png").image,
+    bgcolor: $color("clear")
+  },
+  layout: (make, view) => {
+    make.centerY.equalTo(view.super.centerY)
+    make.left.inset(15)
+    make.size.equalTo(btnSize)
+  },
+  events: {
+    tapped: (sender) => {
+      $device.taptic(0);
+      if($('PLAY')==undefined){
+        $('PAUSE').remove()
+        $('buttonContainer').add(playBtn)
+      }
+      $('web').eval({
+        script: `animItem.stop()`,
+        handler:  (result, error) =>{}
+      })
+      localAnimateAcitivity()
+    }
+  }
+}
+let colorBtn={
+  type: "button",
+  props: {
+    id: "COLOR",
+    image: $file.read("./assets/preview.png").image,
+    bgcolor: $color("clear")
+  },
+  layout: (make, view) => {
+    make.centerY.equalTo(view.super.centerY)
+    make.left.inset(80)
+    make.size.equalTo($size(50,50))
+  },
+  events: {
+    tapped: (sender) =>{
+      $device.taptic(0);
+      if($("colorContainer").frame.height==0){
+        $("colorContainer").updateLayout((make) => {
+          make.width.equalTo($("slider").width)
+          make.height.equalTo(43)
+        })
+        $ui.animate({
+          duration: 0.4,
+          delay: 0,
+          damping: 0.5,
+          velocity: 0,
+          options: 0,
+          animation:  () =>{
+            $("colorContainer").relayout();
+            $("colorContainer").alpha=1
+          }
+        })
+      }else{
+        $("colorContainer").updateLayout((make) => {
+          make.height.width.equalTo(0)
+        })
+        $ui.animate({
+          duration: 0.4,
+          delay: 0,
+          damping: 0.5,
+          velocity: 0,
+          options: 0,
+          animation:  () =>{
+            $("colorContainer").relayout();
+            $("colorContainer").alpha=0
+          }
+        })
+      }
+      if($("color#FFFFFF")==undefined){
+        let colorList=['#FFFFFF','#000000','#3498DB','#2ECC71','#F1C40F','#C0392B','#8E44AD']
+        let btnHeight=$("colorContainer").frame.height-8
+        let edge=($("colorContainer").frame.width-btnHeight*colorList.length)/(colorList.length+1)
+        for(let i in colorList){
+          $("colorContainer").add({
+            type:"button",
+            props:{
+              id:"color"+colorList[i],
+              radius:17,
+              bgcolor:$color(colorList[i]),
+              borderColor:$color("black")
+            },
+            layout:(make,view)=>{
+              make.height.width.equalTo(btnHeight)
+              make.centerY.equalTo(view.super.centerY)
+              make.left.inset((parseInt(i)+1)*edge+parseInt(i)*btnHeight)
+            },
+            events:{
+              tapped:sender=>{
+                $device.taptic(0);
+                $('web').eval({
+                  script: `svgContainer.style.backgroundColor="${colorList[i]}"`,
+                  handler:  (result, error)=> {}
+                })
+                sender.borderWidth=1.5
+                for(let i in colorList){
+                  if(sender.id!="color"+colorList[i]){
+                    $("color"+colorList[i]).borderWidth=0
+                  }
+                }
+              }
+            }
+          })
+        }
+        $("color#FFFFFF").borderWidth=1.5 
+      }
+    }
+  }
+}
+let playBtn={
+  type: "button",
+  props: {
+    id: "PLAY",
+    image: $file.read("./assets/play.png").image,
+    bgcolor: $color("clear")
+  },
+  layout: (make, view) => {
+    make.center.equalTo(view.super.center)
+    make.size.equalTo(btnSize)
+  },
+  events: {
+    tapped: (sender) => {
+      $device.taptic(0);
+      sender.remove()
+      $('buttonContainer').add(pauseBtn)
+      $('slider').value=0
+      $('web').eval({
+        script: `animItem.${sender.id.toLocaleLowerCase()}()`,
+
+        handler:  (result, error) =>{}
+      })
+      $ui.toast(sender.id);
+    }
+  }
+}
+let pauseBtn={
+  type: "button",
+  props: {
+    id: "PAUSE",
+    image: $file.read("./assets/pause.png").image,
+    bgcolor: $color("clear")
+  },
+  layout: (make, view) => {
+    make.center.equalTo(view.super.center)
+    make.size.equalTo(btnSize)
+  },
+  events: {
+    tapped: (sender) => {
+      $device.taptic(0);
+      sender.remove()
+      $('buttonContainer').add(playBtn)
+      $('web').eval({
+        script: `animItem.${sender.id.toLocaleLowerCase()}()`,
+        handler:  (result, error) =>{}
+      })
+      $ui.toast(sender.id);
+    }
+
+  }
+}
+let stopBtn={
+  type: "button",
+  props: {
+    id: "STOP",
+    image: $file.read("./assets/stop.png").image,
+    bgcolor: $color("clear")
+  },
+  layout: (make, view) => {
+    make.centerY.equalTo(view.super.centerY)
+    make.right.inset(80)
+    make.size.equalTo(btnSize)
+  },
+  events: {
+    tapped: (sender) => {
+      $device.taptic(0);
+      if($('PLAY')==undefined){
+        $('PAUSE').remove()
+        $('buttonContainer').add(playBtn)
+      }
+      $('web').eval({
+        script: `animItem.${sender.id.toLocaleLowerCase()}()`,
+        handler:  (result, error)=> {}
+      })
+      $ui.toast(sender.id);
+    }
+  }
+}
+let shareBtn={
+  type: "button",
+  props: {
+    id: "SHARE",
+    image: $file.read("./assets/share.png").image,
+    bgcolor: $color("clear")
+  },
+  layout: (make, view) => {
+    make.centerY.equalTo(view.super.centerY)
+    make.right.inset(15)
+    make.size.equalTo(btnSize)
+  },
+  events: {
+    tapped: (sender) => {
+      $device.taptic(0);
+      $share.sheet(html(json))
+      $ui.toast(sender.id);
+    }
+  }
+}
+let json = $file.read('/assets/loading.json').string
 let lottieJs= $file.read('/scripts/lottie.min.js').string
 let html = (json, size = normalSize) => `<!DOCTYPE html>
 <html lang="en">
@@ -68,7 +301,6 @@ function resetPlaySpeed(){
     handler:  (result, error)=> {}
   })
 }
-
 //官方lottie页面跳转
 function officialPageActivity(searchText = "") {
   $ui.push({
@@ -99,6 +331,7 @@ function officialPageActivity(searchText = "") {
             },
             events: {
               returned: async  (sender)=> {
+                $('searchbarView').super.title=sender.text
                 $("webpage").url = "https://www.lottiefiles.com/search?q=" + encodeURI(sender.text)
                  $("searchbarView").updateLayout((make) => {
                     make.top.inset(-45)
@@ -223,7 +456,6 @@ function officialPageActivity(searchText = "") {
                 $ui.toast("检测为压缩包格式，解压中");
                 let unZipPath="./assets/download/"+file.fileName.split(".")[0]
                 !$file.exists(unZipPath)?$file.mkdir(unZipPath):false;
-                console.log(unZipPath)
                 $archiver.unzip({
                    file: file,
                    dest: unZipPath,
@@ -281,12 +513,12 @@ function getJsonIn(parentFolder, jsonList) {
     }
   }
 }
+
 function insertData() {
   let jsonList = []
   getJsonIn(".", jsonList)
   $("selectView").data=jsonList
 }
-
 //本地动画gallery
 function localAnimateAcitivity() {
   $ui.push({
@@ -356,7 +588,6 @@ function localAnimateAcitivity() {
       layout: $layout.fill,
       events:{
         didSelect: (sender, indexPath, data)=> {
-          console.log()
           $("web").html=html($file.read(data["animationName"]["path"]).string)
           resetPlaySpeed()
           $ui.pop();
@@ -377,12 +608,12 @@ function localAnimateAcitivity() {
 
 
 
-let img = name => {
-  $image.png
-}
+
 $app.autoKeyboardEnabled = true
 $ui.render({
-  props: {},
+  props: {
+    id:"mainView"
+  },
   views: [{
       type: "button",
       props: {
@@ -409,6 +640,10 @@ $ui.render({
             }
           },
           longPressed: (sender) => {
+            if($('PLAY')==undefined){
+                $('PAUSE').remove()
+                $('buttonContainer').add(playBtn)
+              }
             $('web').eval({
               script: `animItem.stop()`,
               handler:  (result, error)=> {}
@@ -475,7 +710,6 @@ $ui.render({
             getDuration:  (frame)=> {
               duration = frame-1
               $('slider').max = duration
-              // $('slider').value=
             },
             clickedEvent:  (str)=> {},
             didClose:  (sender)=> {},
@@ -544,6 +778,15 @@ $ui.render({
             handler:  (result, error) =>{}
           })
           $cache.set("horizontalFixed", false);
+          if($('PAUSE')==undefined){
+                $('PLAY').remove()
+                $('buttonContainer').add(pauseBtn)
+              }
+        }else{
+          if($('PLAY')==undefined){
+                $('PAUSE').remove()
+                $('buttonContainer').add(playBtn)
+              }
         }
         },
         doubleTapped: (sender)=> {
@@ -609,126 +852,39 @@ $ui.render({
       props: {
         id:"buttonContainer",
         borderColor: $color("black"),
-        borderWidth: 2,
-        smoothRadius: 20
+        borderWidth: 1,
+        radius: 20,
+        bgcolor:$color("#EEF1F1")
       },
       layout: (make, view) => {
         make.height.equalTo(60)
         make.left.right.inset(15)
         make.bottom.inset(20)
       },
-      views: [{
-          type: "button",
-          props: {
-            id: "OPEN",
-            image: $file.read("./assets/picture.png").image,
-            bgcolor: $color("clear")
-          },
-          layout: (make, view) => {
-            make.centerY.equalTo(view.super.centerY)
-            make.left.inset(15)
-            make.size.equalTo(btnSize)
-          },
-          events: {
-            tapped: (sender) => {
-              $('web').eval({
-                script: `animItem.stop()`,
-                handler:  (result, error) =>{}
-              })
-              localAnimateAcitivity()
-            }
-          }
-        },
-        {
-          type: "button",
-          props: {
-            id: "PLAY",
-            image: $file.read("./assets/play.png").image,
-            bgcolor: $color("clear")
-          },
-          layout: (make, view) => {
-            make.centerY.equalTo(view.super.centerY)
-            make.left.inset(80) 
-            make.size.equalTo(btnSize)
-          },
-          events: {
-            tapped: (sender) => {
-              $('web').eval({
-                script: `animItem.${sender.id.toLocaleLowerCase()}()`,
-
-                handler:  (result, error) =>{}
-              })
-              $ui.toast(sender.id);
-            }
-          }
-        },
-        {
-          type: "button",
-          props: {
-            id: "PAUSE",
-            image: $file.read("./assets/pause.png").image,
-            bgcolor: $color("clear")
-          },
-          layout: (make, view) => {
-            make.center.equalTo(view.super.center)
-            make.size.equalTo(btnSize)
-          },
-          events: {
-            tapped: (sender) => {
-              $('web').eval({
-                script: `animItem.${sender.id.toLocaleLowerCase()}()`,
-                handler:  (result, error) =>{}
-              })
-              $ui.toast(sender.id);
-            }
-
-          }
-        },
-        {
-          type: "button",
-          props: {
-            id: "STOP",
-            image: $file.read("./assets/stop.png").image,
-            bgcolor: $color("clear")
-          },
-          layout: (make, view) => {
-            make.centerY.equalTo(view.super.centerY)
-            make.right.inset(80)
-            make.size.equalTo(btnSize)
-          },
-          events: {
-            tapped: (sender) => {
-              $('web').eval({
-                script: `animItem.${sender.id.toLocaleLowerCase()}()`,
-                handler:  (result, error)=> {}
-              })
-              $ui.toast(sender.id);
-            }
-          }
-        },
-        {
-          type: "button",
-          props: {
-            id: "SHARE",
-            image: $file.read("./assets/share.png").image,
-            bgcolor: $color("clear")
-          },
-          layout: (make, view) => {
-            make.centerY.equalTo(view.super.centerY)
-            make.right.inset(15)
-            make.size.equalTo(btnSize)
-          },
-          events: {
-            tapped: (sender) => {
-              $share.sheet(html(json))
-              $ui.toast(sender.id);
-            }
-          }
-        }
-      ]
-    }
+      views: [openBtn,colorBtn,pauseBtn,stopBtn,shareBtn]
+    },colorContainer,
   ],
   events: {
+    tapped:(sender)=>{
+      $("inputUrl").blur()
+      if($("colorContainer")!=undefined&&$("colorContainer").frame.height!=0){
+        $device.taptic(0);
+        $("colorContainer").updateLayout((make) => {
+          make.width.height.equalTo(0)
+        })
+        $ui.animate({
+          duration: 0.4,
+          delay: 0,
+          damping: 0.5,
+          velocity: 0,
+          options: 0,
+          animation:  () =>{
+            $("colorContainer").relayout();
+            $("colorContainer").alpha=0
+          }
+        })
+      }
+    },
     appeared:  () =>{
     },
     disappeared:  ()=> {
